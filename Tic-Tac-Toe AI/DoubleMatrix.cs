@@ -39,6 +39,17 @@ namespace Tic_Tac_Toe_AI
             }
         }
 
+        public void Activate(ActivationFunction activation)
+        {
+            for (int i = 0; i < Rows; i++)
+            {
+                for (int j = 0; j < Cols; j++)
+                {
+                    Matrix[i, j] = activation(Matrix[i, j]);
+                }
+            }
+        }
+
         public double this[int row, int col]
         {
             get
@@ -64,10 +75,36 @@ namespace Tic_Tac_Toe_AI
                 for (int j = 0; j < mx.Cols; j++)
                 {
                     mx[i, j] = a[i, j] + b[i, j];
-                    mx *= 5;
                 }
             }
             return mx;
+        }
+
+        public static DoubleMatrix operator -(DoubleMatrix mx)
+        {
+            for (int i = 0; i < mx.Rows; i++)
+            {
+                for (int j = 0; j < mx.Cols; j++)
+                {
+                    mx[i, j] *= -1;
+                }
+            }
+            return mx;
+        }
+
+        public static DoubleMatrix operator -(DoubleMatrix a, DoubleMatrix b) => a + -b;
+
+        public static DoubleMatrix operator !(DoubleMatrix mx)
+        {
+            DoubleMatrix t = new DoubleMatrix(mx.Cols, mx.Rows, MatrixInitMode.Null);
+            for (int i = 0; i < mx.Rows; i++)
+            {
+                for (int j = 0; j < mx.Cols; j++)
+                {
+                    t[j, i] = mx[i, j];
+                }
+            }
+            return t;
         }
 
         #region Matrix Number multiplication overloads
