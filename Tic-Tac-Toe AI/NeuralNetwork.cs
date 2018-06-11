@@ -49,6 +49,8 @@ namespace Tic_Tac_Toe_AI
         private readonly ActivationFunction activation;
         private readonly ActivationFunction activationD;
 
+        public double LearningRate { get; private set; }
+
         // Main constructor
         public NeuralNetwork(int inputNeuronCount, int outputNeuronCount, ActivationFunctionType activationFunctionType, params int[] hiddenNeuronCounts)
         {
@@ -86,6 +88,8 @@ namespace Tic_Tac_Toe_AI
                 default:
                     break;
             }
+
+            LearningRate = 0.1;
         }
         
         /// <summary>
@@ -95,8 +99,7 @@ namespace Tic_Tac_Toe_AI
         /// <returns>A DoubleMatrix that represents outputs from this Neural Network</returns>
         public DoubleMatrix Predict(DoubleMatrix input)
         {
-            List<DoubleMatrix> hiddenLayers;
-            return Predict(input, out hiddenLayers);
+            return Predict(input, out List<DoubleMatrix> hiddenLayers);
         }
 
         private DoubleMatrix Predict(DoubleMatrix input, out List<DoubleMatrix> hiddenLeyers)
@@ -133,14 +136,26 @@ namespace Tic_Tac_Toe_AI
             // Done
             return intermediate;
         }
-
-        // Not working yet
+        
+        /*
+        // Not working yet, doesn't need to
         public void Learn(DoubleMatrix input, DoubleMatrix desiredOutput)
         {
-            List<DoubleMatrix> hiddenLayers;
-            DoubleMatrix result = Predict(input, out hiddenLayers);
+            // throw new NotImplementedException("Nope! Bad!");
+            // Generate output
+            DoubleMatrix result = Predict(input, out List<DoubleMatrix> hiddenLayers);
+            
+            // Calculate error as ERROR = DESIRED - ACTUAL
             DoubleMatrix outputError = desiredOutput - result;
-        }
+
+            // Calculate gradient
+            DoubleMatrix outputGradient = result.Clone();
+            outputGradient.Activate(activationD);
+            outputGradient = outputError * outputGradient;
+            outputGradient *= LearningRate;
+
+
+        }*/
 
         #region Activation Functions
         // Some mathsy shenanigans

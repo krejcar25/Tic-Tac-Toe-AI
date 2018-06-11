@@ -39,6 +39,11 @@ namespace Tic_Tac_Toe_AI
             }
         }
 
+        private DoubleMatrix(double[,] init)
+        {
+            Matrix = (double[,])init.Clone();
+        }
+
         public void Activate(ActivationFunction activation)
         {
             for (int i = 0; i < Rows; i++)
@@ -48,6 +53,11 @@ namespace Tic_Tac_Toe_AI
                     Matrix[i, j] = activation(Matrix[i, j]);
                 }
             }
+        }
+
+        public DoubleMatrix Clone()
+        {
+            return new DoubleMatrix(Matrix);
         }
 
         public double this[int row, int col]
