@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
@@ -13,11 +14,11 @@ namespace Tic_Tac_Toe_AI
         /// <summary>
         /// How many imput neurons does this Neural Network have
         /// </summary>
-        public int InputNeuronCount => connections[0].Rows;
+        public int InputNeuronCount => connections[0].Cols;
         /// <summary>
         /// How many output neurons does this Neural Network have
         /// </summary>
-        public int OutputNeuronsCount => connections[connections.Count - 1].Rows;
+        public int OutputNeuronCount => connections[connections.Count - 1].Rows;
         /// <summary>
         /// How many hidden neurons does this Neural Network have - use indexer
         /// </summary>
@@ -28,7 +29,7 @@ namespace Tic_Tac_Toe_AI
                 Dictionary<int, int> counts = new Dictionary<int, int>();
                 for (int i = 1; i < connections.Count; i++)
                 {
-                    counts.Add(i - 1, connections[i].Rows);
+                    counts.Add(i - 1, connections[i].Cols);
                 }
                 return new ReadOnlyDictionary<int, int>(counts);
             }
@@ -40,11 +41,65 @@ namespace Tic_Tac_Toe_AI
 
         // Connection matrices dictionary
         // Next layer's neuron count as rows count, previous layer's as cols count
+        [JsonProperty]
         private Dictionary<int, DoubleMatrix> connections = new Dictionary<int, DoubleMatrix>();
-        
+
         // Bias matrices, one for each hidden layer and one for output
+        [JsonProperty]
         private Dictionary<int, DoubleMatrix> biases = new Dictionary<int, DoubleMatrix>();
+        [JsonProperty]
         private DoubleMatrix outputBias;
+
+        public double this[string layer, int indexFrom, int indexTo]
+        {
+            get
+            {
+                if (layer == "input")
+                {
+                    if (indexFrom >= InputNeuronCount) throw new IndexOutOfRangeException(string.Format("indexFrom must be in range of input layer's neuron count ({0})", InputNeuronCount));
+                    else if (indexTo >= HiddenNeuronsCounts[0]) throw new IndexOutOfRangeException(string.Format("indexTo must be in range of 1st hidden layer's neuron count ({0})", HiddenNeuronsCounts[0]));
+                    else return connections[0][indexTo, indexFrom];
+                }
+                else if (layer == "output")
+                {
+                    if (indexFrom >= HiddenNeuronsCounts[HiddenLayerCount - 1]) throw new IndexOutOfRangeException(string.Format("indexFrom must be in range of last hidden layer's neuron count ({0})", HiddenNeuronsCounts[HiddenLayerCount - 1]));
+                    else if (indexTo >= OutputNeuronCount) throw new IndexOutOfRangeException(string.Format("indexTo must be in range of 1st hidden layer's neuron count ({0})", OutputNeuronCount));
+                    else return connections[connections.Count - 1][indexTo, indexFrom];
+                }
+                else if (int.TryParse(layer, out int layerIndex)) return this[layerIndex, indexFrom, indexTo];
+                else throw new ArgumentException("Layer name unknown", "layer");
+            }
+        }
+
+        public double this[int layer, int indexFrom, int indexTo]
+        {
+            get
+            {
+                if (layer >= HiddenLayerCount) throw new IndexOutOfRangeException(string.Format("layer must be in range of HiddenLayerCount ({0})", HiddenLayerCount));
+                else if (indexFrom >= HiddenNeuronsCounts[layer]) throw new IndexOutOfRangeException(string.Format("indexFrom must be in range of layer {0}'s neuron count ({1})", layer, HiddenNeuronsCounts[layer]));
+                else if (indexTo >= HiddenNeuronsCounts[layer + 1]) throw new IndexOutOfRangeException(string.Format("indexTo must be in range of layer {0}'s neuron count ({1})", layer + 1, HiddenNeuronsCounts[layer + 1]));
+                else return connections[layer + 1][indexTo, indexFrom];
+            }
+        }
+
+        public double this[int layer, int index]
+        {
+            get
+            {
+                if (layer >= biases.Count) throw new IndexOutOfRangeException(string.Format("layer must be in range of biases Count ({0})", biases.Count));
+                else if (index >= biases[layer].Rows) throw new IndexOutOfRangeException(string.Format("index must be in range of layer {0}'s neuron count ({1})", layer, biases[layer].Rows));
+                return biases[layer][index, 0];
+            }
+        }
+
+        public double this[int index]
+        {
+            get
+            {
+                if (index >= outputBias.Rows) throw new IndexOutOfRangeException(string.Format("index must be in range of output layers neuron count ({0})", outputBias.Rows));
+                else return outputBias[index, 0];
+            }
+        }
 
         private readonly ActivationFunction activation;
         private readonly ActivationFunction activationD;
@@ -61,6 +116,7 @@ namespace Tic_Tac_Toe_AI
 
             // Input ➡ First Hidden
             connections.Add(0, new DoubleMatrix(hiddenNeuronCounts[0], inputNeuronCount, MatrixInitMode.RanNorm));
+            biases.Add(0, new DoubleMatrix(hiddenNeuronCounts[0], 1, MatrixInitMode.RanNorm));
             int i;
             for (i = 1; i < hiddenNeuronCounts.Length; i++)
             {
@@ -91,7 +147,7 @@ namespace Tic_Tac_Toe_AI
 
             LearningRate = 0.1;
         }
-        
+
         /// <summary>
         /// Predicts an answer based on current weights and biases. Call this to get actual results according to current state of this Neural Network
         /// </summary>
@@ -136,7 +192,7 @@ namespace Tic_Tac_Toe_AI
             // Done
             return intermediate;
         }
-        
+
         /*
         // Not working yet, doesn't need to
         public void Learn(DoubleMatrix input, DoubleMatrix desiredOutput)
@@ -167,6 +223,8 @@ namespace Tic_Tac_Toe_AI
 
         public static double HyperbolicTangentActivationFunctionDerivative(double value) => 1 / Math.Pow(Math.Cosh(value), 2);
         #endregion
+
+        public override string ToString() => JsonConvert.SerializeObject(this, Formatting.Indented);
     }
 
     public delegate double ActivationFunction(double value);

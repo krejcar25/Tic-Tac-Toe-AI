@@ -19,7 +19,7 @@ namespace Tic_Tac_Toe_AI
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window, INotifyPropertyChanged
+    public partial class MainWindow : Window
     {
         private bool inputNeuronsValid => int.TryParse(inputCountTextBox.Text, out int inputCount);
         private bool outputNeuronsValid => int.TryParse(outputCountTextBox.Text, out int outputCount);
@@ -31,41 +31,50 @@ namespace Tic_Tac_Toe_AI
 
         public string GenerateNetworkButtonTooltip => string.Format("Input layer: {1}{0}Output layer: {2}{0}Hidden layers: {3}",
             Environment.NewLine, (inputNeuronsValid) ? "Success" : "Fail", (outputNeuronsValid) ? "Success" : "Fail", (hiddenLayersValid) ? "Success" : "Fail");
-            
+
         public MainWindow()
         {
-           //jde se
             InitializeComponent();
             DataContext = this;
+            hiddenLayersListBox.Items.Add(new HiddenListItem(3));
+            hiddenLayersListBox.Items.Add(new HiddenListItem(4));
+            CheckCanGenerateNetwork();
+            CheckCanAddNewHiddenLayer();
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
-
-        private void inputCountTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void CheckCanGenerateNetwork()
         {
-            PropertyChanged?.Invoke(sender, new PropertyChangedEventArgs("CanGenerateNetwork"));
-            PropertyChanged?.Invoke(sender, new PropertyChangedEventArgs("GenerateNetworkButtonTooltip"));
+            generateNetworkButton.IsEnabled = CanGenerateNetwork;
+            generateNetworkButton.ToolTip = GenerateNetworkButtonTooltip;
         }
 
-        private void outputCountTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void CheckCanAddNewHiddenLayer()
         {
-            PropertyChanged?.Invoke(sender, new PropertyChangedEventArgs("CanGenerateNetwork"));
-            PropertyChanged?.Invoke(sender, new PropertyChangedEventArgs("GenerateNetworkButtonTooltip"));
+            newHiddenLayerAddButton.IsEnabled = CanAddNewHidden;
         }
 
-        private void newHiddenLayerNeuronCountTextBox_PreviewTextInput(object sender, TextCompositionEventArgs e)
+        private void inputCountTextBox_KeyUp(object sender, KeyEventArgs e)
         {
-            PropertyChanged?.Invoke(sender, new PropertyChangedEventArgs("CanAddNewHidden"));
+            CheckCanGenerateNetwork();
+        }
+
+        private void outputCountTextBox_KeyUp(object sender, KeyEventArgs e)
+        {
+            CheckCanGenerateNetwork();
+        }
+
+        private void newHiddenLayerNeuronCountTextBox_KeyUp(object sender, KeyEventArgs e)
+        {
+            CheckCanAddNewHiddenLayer();
         }
 
         private void newHiddenLayerAddButton_Click(object sender, RoutedEventArgs e)
         {
-            PropertyChanged?.Invoke(sender, new PropertyChangedEventArgs("CanGenerateNetwork"));
-            PropertyChanged?.Invoke(sender, new PropertyChangedEventArgs("GenerateNetworkButtonTooltip"));
             if (int.TryParse(newHiddenLayerNeuronCountTextBox.Text, out int count))
             {
                 hiddenLayersListBox.Items.Add(new HiddenListItem(count));
             }
+            CheckCanGenerateNetwork();
         }
 
         private void hiddenNeuronUpButton_Click(object sender, RoutedEventArgs e)
@@ -82,8 +91,7 @@ namespace Tic_Tac_Toe_AI
 
         private void hiddenNeuronRemoveButton_Click(object sender, RoutedEventArgs e)
         {
-            PropertyChanged?.Invoke(sender, new PropertyChangedEventArgs("CanGenerateNetwork"));
-            PropertyChanged?.Invoke(sender, new PropertyChangedEventArgs("GenerateNetworkButtonTooltip"));
+            CheckCanGenerateNetwork();
             int index = hiddenLayersListBox.SelectedIndex;
             if (index > -1)
             {
@@ -103,6 +111,16 @@ namespace Tic_Tac_Toe_AI
                 hiddenLayersListBox.Items[index + 1] = temp;
                 hiddenLayersListBox.SelectedIndex = index + 1;
             }
+        }
+
+        private void generateNetworkButton_Click(object sender, RoutedEventArgs e)
+        {
+            int[] hidden = new int[hiddenLayersListBox.Items.Count];
+            for (int i = 0; i < hiddenLayersListBox.Items.Count; i++) hidden[i] = ((HiddenListItem)hiddenLayersListBox.Items[i]).Count;
+            NeuralNetwork nn = new NeuralNetwork(int.Parse(inputCountTextBox.Text), int.Parse(outputCountTextBox.Text), ActivationFunctionType.Sigmoid, hidden);
+            if (Keyboard.IsKeyDown(Key.LeftCtrl) || Keyboard.IsKeyDown(Key.RightCtrl)) Clipboard.SetText(nn.ToString());
+            NNView view = new NNView(nn);
+            view.Show();
         }
     }
 

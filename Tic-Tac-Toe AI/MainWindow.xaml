@@ -13,8 +13,8 @@
         </Grid.ColumnDefinitions>
         <GroupBox Header="New Neural Network" Margin="10">
             <Grid Margin="0,0,-2,-12">
-                <TextBox x:Name="inputCountTextBox" HorizontalAlignment="Left" Height="23" Margin="137,14,0,0" TextWrapping="Wrap" Text="2" VerticalAlignment="Top" Width="120" PreviewTextInput="inputCountTextBox_PreviewTextInput"/>
-                <TextBox x:Name="outputCountTextBox" Height="23" Margin="137,45,0,0" TextWrapping="Wrap" Text="2" VerticalAlignment="Top" HorizontalAlignment="Left" Width="120" PreviewTextInput="outputCountTextBox_PreviewTextInput"/>
+                <TextBox x:Name="inputCountTextBox" HorizontalAlignment="Left" Height="23" Margin="137,14,0,0" TextWrapping="Wrap" Text="2" VerticalAlignment="Top" Width="120" KeyUp="inputCountTextBox_KeyUp"/>
+                <TextBox x:Name="outputCountTextBox" Height="23" Margin="137,45,0,0" TextWrapping="Wrap" Text="5" VerticalAlignment="Top" HorizontalAlignment="Left" Width="120" KeyUp="outputCountTextBox_KeyUp"/>
                 <Label Content="Input neuron count:" HorizontalAlignment="Left" Margin="10,10,0,0" VerticalAlignment="Top"/>
                 <Label Content="Output neuron count:" HorizontalAlignment="Left" Margin="10,41,0,0" VerticalAlignment="Top"/>
                 <GroupBox Header="Hidden neurons" Margin="10,72,10,116">
@@ -48,11 +48,11 @@
                         </Button>
                         <ListBox x:Name="hiddenLayersListBox" Grid.Column="1" Margin="10" Grid.RowSpan="5"/>
                         <Label Content="Neuron count" HorizontalAlignment="Left" Height="25" Margin="10,10,0,0" VerticalAlignment="Top" Width="86"/>
-                        <TextBox x:Name="newHiddenLayerNeuronCountTextBox" Margin="10" Grid.Row="1" TextWrapping="Wrap" Text="2" PreviewTextInput="newHiddenLayerNeuronCountTextBox_PreviewTextInput"/>
-                        <Button x:Name="newHiddenLayerAddButton" Content="Add" Margin="10" Grid.Row="2" IsEnabled="{Binding CanAddNewHidden, ElementName=window}" Click="newHiddenLayerAddButton_Click"/>
+                        <TextBox x:Name="newHiddenLayerNeuronCountTextBox" Margin="10" Grid.Row="1" TextWrapping="Wrap" Text="2" KeyUp="newHiddenLayerNeuronCountTextBox_KeyUp"/>
+                        <Button x:Name="newHiddenLayerAddButton" Content="Add" Margin="10" Grid.Row="2" Click="newHiddenLayerAddButton_Click"/>
                     </Grid>
                 </GroupBox>
-                <Button Margin="10,278,10,47" ToolTip="{Binding GenerateNetworkButtonTooltip, Mode=OneWay}">
+                <Button x:Name="generateNetworkButton" Margin="10,278,10,47" Click="generateNetworkButton_Click">
                     <Viewbox>
                         <TextBlock Text="Generate network"/>
                     </Viewbox>

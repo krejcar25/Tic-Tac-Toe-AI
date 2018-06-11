@@ -1,38 +1,40 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 
 namespace Tic_Tac_Toe_AI
 {
     public partial class DoubleMatrix
     {
+        public static Random Random = new Random();
+
+        [JsonProperty]
         private double[,] Matrix { get; set; }
 
         public int Rows => Matrix.GetLength(0);
         public int Cols => Matrix.GetLength(1);
-        
+
         public DoubleMatrix(int rows, int cols, MatrixInitMode initMode)
         {
             Matrix = new double[rows, cols];
             if (initMode == MatrixInitMode.Null) return;
             else if (initMode == MatrixInitMode.RanNorm)
             {
-                Random random = new Random();
                 for (int i = 0; i < Rows; i++)
                 {
                     for (int j = 0; j < Cols; j++)
                     {
-                        Matrix[i, j] = random.NextDouble();
+                        Matrix[i, j] = Random.NextDouble();
                     }
                 }
                 return;
             }
             else if (initMode == MatrixInitMode.Random)
             {
-                Random random = new Random();
                 for (int i = 0; i < Rows; i++)
                 {
                     for (int j = 0; j < Cols; j++)
                     {
-                        Matrix[i, j] = random.NextDouble() * random.Next(int.MinValue, int.MaxValue);
+                        Matrix[i, j] = Random.NextDouble() * Random.Next(int.MinValue, int.MaxValue);
                     }
                 }
                 return;
@@ -125,7 +127,7 @@ namespace Tic_Tac_Toe_AI
         public static DoubleMatrix operator *(int c, DoubleMatrix mx) => (double)c * mx;
         public static DoubleMatrix operator *(uint c, DoubleMatrix mx) => (double)c * mx;
         public static DoubleMatrix operator *(long c, DoubleMatrix mx) => (double)c * mx;
-        public static DoubleMatrix operator *(ulong c, DoubleMatrix mx) => (double)c * mx; 
+        public static DoubleMatrix operator *(ulong c, DoubleMatrix mx) => (double)c * mx;
         public static DoubleMatrix operator *(float c, DoubleMatrix mx) => (double)c * mx;
         public static DoubleMatrix operator *(decimal c, DoubleMatrix mx) => (double)c * mx;
 
