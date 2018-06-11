@@ -14,14 +14,17 @@ namespace Tic_Tac_Toe_AI
         /// <summary>
         /// How many imput neurons does this Neural Network have
         /// </summary>
+        [JsonIgnore]
         public int InputNeuronCount => connections[0].Cols;
         /// <summary>
         /// How many output neurons does this Neural Network have
         /// </summary>
+        [JsonIgnore]
         public int OutputNeuronCount => connections[connections.Count - 1].Rows;
         /// <summary>
         /// How many hidden neurons does this Neural Network have - use indexer
         /// </summary>
+        [JsonIgnore]
         public ReadOnlyDictionary<int, int> HiddenNeuronsCounts
         {
             get
@@ -37,6 +40,7 @@ namespace Tic_Tac_Toe_AI
         /// <summary>
         /// How many hidden layers does this Neural Network have
         /// </summary>
+        [JsonIgnore]
         public int HiddenLayerCount => connections.Count - 1;
 
         // Connection matrices dictionary

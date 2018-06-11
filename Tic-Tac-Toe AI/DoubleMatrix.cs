@@ -10,7 +10,9 @@ namespace Tic_Tac_Toe_AI
         [JsonProperty]
         private double[,] Matrix { get; set; }
 
+        [JsonIgnore]
         public int Rows => Matrix.GetLength(0);
+        [JsonIgnore]
         public int Cols => Matrix.GetLength(1);
 
         public DoubleMatrix(int rows, int cols, MatrixInitMode initMode)
