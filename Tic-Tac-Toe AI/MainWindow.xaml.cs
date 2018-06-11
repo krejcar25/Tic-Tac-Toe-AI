@@ -22,6 +22,7 @@ namespace Tic_Tac_Toe_AI
     {
         public MainWindow()
         {
+            //vojta kouri pero
             InitializeComponent();
         }
     }
