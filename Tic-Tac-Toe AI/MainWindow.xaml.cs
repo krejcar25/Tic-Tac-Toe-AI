@@ -31,10 +31,10 @@ namespace Tic_Tac_Toe_AI
 
         public string GenerateNetworkButtonTooltip => string.Format("Input layer: {1}{0}Output layer: {2}{0}Hidden layers: {3}",
             Environment.NewLine, (inputNeuronsValid) ? "Success" : "Fail", (outputNeuronsValid) ? "Success" : "Fail", (hiddenLayersValid) ? "Success" : "Fail");
-            
+
         public MainWindow()
         {
-           //jde se
+            //jde se
             InitializeComponent();
             DataContext = this;
         }
