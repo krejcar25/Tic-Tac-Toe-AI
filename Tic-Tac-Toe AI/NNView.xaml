@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:Tic_Tac_Toe_AI"
         mc:Ignorable="d"
         Title="NNView" Height="450" Width="800">
-    <Grid>
-        
-    </Grid>
+    <ScrollViewer x:Name="scrollViewer" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+        <Grid x:Name="Grid"/>
+    </ScrollViewer>
 </Window>
