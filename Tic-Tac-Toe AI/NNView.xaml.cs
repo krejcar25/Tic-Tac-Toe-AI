@@ -21,8 +21,9 @@ namespace Tic_Tac_Toe_AI
     {
         private double neuronDiameter = 50;
         private double neuronRadius => neuronDiameter / 2;
-        private double marginVertical = 10;
+        private double marginVertical = 75;
         private double marginHorizontal = 75;
+        private double connectionThickness = 8;
 
         public NNView(NeuralNetwork neuralNetwork)
         {
@@ -32,7 +33,7 @@ namespace Tic_Tac_Toe_AI
             {
                 double y = i * (neuronDiameter + marginVertical);
                 AddNeuron(0, y, Brushes.Green);
-                for (int j = 0; j < neuralNetwork.HiddenNeuronsCounts[0]; j++)
+                for (int j = 0; j < neuralNetwork.HiddenNeuronCounts[0]; j++)
                 {
                     AddConnection(
                         new Point(neuronRadius, y + neuronRadius),
@@ -43,14 +44,14 @@ namespace Tic_Tac_Toe_AI
 
             for (int i = 0; i < neuralNetwork.HiddenLayerCount; i++)
             {
-                for (int j = 0; j < neuralNetwork.HiddenNeuronsCounts[i]; j++)
+                for (int j = 0; j < neuralNetwork.HiddenNeuronCounts[i]; j++)
                 {
                     double x = (i + 1) * (marginHorizontal + neuronDiameter);
                     double y = j * (neuronDiameter + marginVertical);
                     AddNeuron(x, y, Brushes.Yellow, neuralNetwork[i, j]);
                     if (i + 1 < neuralNetwork.HiddenLayerCount)
                     {
-                        for (int k = 0; k < neuralNetwork.HiddenNeuronsCounts[i + 1]; k++)
+                        for (int k = 0; k < neuralNetwork.HiddenNeuronCounts[i + 1]; k++)
                         {
                             AddConnection(
                                 new Point(x + neuronRadius, y + neuronRadius),
@@ -66,7 +67,7 @@ namespace Tic_Tac_Toe_AI
                 double x = (neuralNetwork.HiddenLayerCount + 1) * (marginHorizontal + neuronDiameter);
                 double y = i * (neuronDiameter + marginVertical);
                 AddNeuron(x, y, Brushes.Red, neuralNetwork[i]);
-                for (int j = 0; j < neuralNetwork.HiddenNeuronsCounts[neuralNetwork.HiddenLayerCount - 1]; j++)
+                for (int j = 0; j < neuralNetwork.HiddenNeuronCounts[neuralNetwork.HiddenLayerCount - 1]; j++)
                 {
                     AddConnection(
                         new Point(x + neuronRadius, y + neuronRadius),
@@ -78,32 +79,61 @@ namespace Tic_Tac_Toe_AI
 
         private void AddNeuron(double left, double top, Brush color, double? bias = null)
         {
-            Ellipse ellipse = new Ellipse();
-            ellipse.Fill = color;
-            ellipse.Stroke = null;
-            ellipse.Width = neuronDiameter;
-            ellipse.Height = neuronDiameter;
-            ellipse.Margin = new Thickness(left, top, 0, 0);
-            ellipse.HorizontalAlignment = HorizontalAlignment.Left;
-            ellipse.VerticalAlignment = VerticalAlignment.Top;
-            ellipse.SetValue(Panel.ZIndexProperty, 0);
-            if (bias != null) ellipse.ToolTip = string.Format("Bias: {0}", bias);
-            Grid.Children.Add(ellipse);
+            if (bias != null)
+            {
+                Ellipse background = new Ellipse();
+                background.Fill = Brushes.LightGray;
+                background.Stroke = null;
+                background.Width = neuronDiameter;
+                background.Height = neuronDiameter;
+                background.Margin = new Thickness(left, top, 0, 0);
+                background.HorizontalAlignment = HorizontalAlignment.Left;
+                background.VerticalAlignment = VerticalAlignment.Top;
+                background.SetValue(Panel.ZIndexProperty, 0);
+                if (bias != null) background.ToolTip = string.Format("Bias: {0}", bias);
+                Grid.Children.Add(background);
+            }
+
+            double actualDiameter = (bias == null) ? neuronDiameter : neuronDiameter * (double)bias;
+
+            Ellipse neuron = new Ellipse();
+            neuron.Fill = color;
+            neuron.Stroke = null;
+            neuron.Width = actualDiameter;
+            neuron.Height = actualDiameter;
+            neuron.Margin = new Thickness(left + (neuronDiameter - actualDiameter) / 2, top + (neuronDiameter - actualDiameter) / 2, 0, 0);
+            neuron.HorizontalAlignment = HorizontalAlignment.Left;
+            neuron.VerticalAlignment = VerticalAlignment.Top;
+            neuron.SetValue(Panel.ZIndexProperty, 5);
+            if (bias != null) neuron.ToolTip = string.Format("Bias: {0}", bias);
+            Grid.Children.Add(neuron);
         }
 
         private void AddConnection(Point A, Point B, double weight)
         {
-            Line line = new Line();
-            line.Stroke = Brushes.Blue;
-            line.SetValue(Panel.ZIndexProperty, 10);
-            line.Fill = null;
-            line.StrokeThickness = 1;
-            line.X1 = A.X;
-            line.Y1 = A.Y;
-            line.X2 = B.X;
-            line.Y2 = B.Y;
-            line.ToolTip = string.Format("Weight: {0}", weight);
-            Grid.Children.Add(line);
+            Line background = new Line();
+            background.Stroke = Brushes.LightGray;
+            background.SetValue(Panel.ZIndexProperty, 0);
+            background.Fill = null;
+            background.StrokeThickness = connectionThickness;
+            background.X1 = A.X;
+            background.Y1 = A.Y;
+            background.X2 = B.X;
+            background.Y2 = B.Y;
+            background.ToolTip = string.Format("Weight: {0}", weight);
+            Grid.Children.Add(background);
+
+            Line connection = new Line();
+            connection.Stroke = Brushes.Blue;
+            connection.SetValue(Panel.ZIndexProperty, 10);
+            connection.Fill = null;
+            connection.StrokeThickness = connectionThickness * weight;
+            connection.X1 = A.X;
+            connection.Y1 = A.Y;
+            connection.X2 = B.X;
+            connection.Y2 = B.Y;
+            connection.ToolTip = string.Format("Weight: {0}", weight);
+            Grid.Children.Add(connection);
         }
     }
 }

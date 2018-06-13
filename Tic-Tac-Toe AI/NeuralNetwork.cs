@@ -25,7 +25,7 @@ namespace Tic_Tac_Toe_AI
         /// How many hidden neurons does this Neural Network have - use indexer
         /// </summary>
         [JsonIgnore]
-        public ReadOnlyDictionary<int, int> HiddenNeuronsCounts
+        public ReadOnlyDictionary<int, int> HiddenNeuronCounts
         {
             get
             {
@@ -61,12 +61,12 @@ namespace Tic_Tac_Toe_AI
                 if (layer == "input")
                 {
                     if (indexFrom >= InputNeuronCount) throw new IndexOutOfRangeException(string.Format("indexFrom must be in range of input layer's neuron count ({0})", InputNeuronCount));
-                    else if (indexTo >= HiddenNeuronsCounts[0]) throw new IndexOutOfRangeException(string.Format("indexTo must be in range of 1st hidden layer's neuron count ({0})", HiddenNeuronsCounts[0]));
+                    else if (indexTo >= HiddenNeuronCounts[0]) throw new IndexOutOfRangeException(string.Format("indexTo must be in range of 1st hidden layer's neuron count ({0})", HiddenNeuronCounts[0]));
                     else return connections[0][indexTo, indexFrom];
                 }
                 else if (layer == "output")
                 {
-                    if (indexFrom >= HiddenNeuronsCounts[HiddenLayerCount - 1]) throw new IndexOutOfRangeException(string.Format("indexFrom must be in range of last hidden layer's neuron count ({0})", HiddenNeuronsCounts[HiddenLayerCount - 1]));
+                    if (indexFrom >= HiddenNeuronCounts[HiddenLayerCount - 1]) throw new IndexOutOfRangeException(string.Format("indexFrom must be in range of last hidden layer's neuron count ({0})", HiddenNeuronCounts[HiddenLayerCount - 1]));
                     else if (indexTo >= OutputNeuronCount) throw new IndexOutOfRangeException(string.Format("indexTo must be in range of 1st hidden layer's neuron count ({0})", OutputNeuronCount));
                     else return connections[connections.Count - 1][indexTo, indexFrom];
                 }
@@ -80,8 +80,8 @@ namespace Tic_Tac_Toe_AI
             get
             {
                 if (layer >= HiddenLayerCount) throw new IndexOutOfRangeException(string.Format("layer must be in range of HiddenLayerCount ({0})", HiddenLayerCount));
-                else if (indexFrom >= HiddenNeuronsCounts[layer]) throw new IndexOutOfRangeException(string.Format("indexFrom must be in range of layer {0}'s neuron count ({1})", layer, HiddenNeuronsCounts[layer]));
-                else if (indexTo >= HiddenNeuronsCounts[layer + 1]) throw new IndexOutOfRangeException(string.Format("indexTo must be in range of layer {0}'s neuron count ({1})", layer + 1, HiddenNeuronsCounts[layer + 1]));
+                else if (indexFrom >= HiddenNeuronCounts[layer]) throw new IndexOutOfRangeException(string.Format("indexFrom must be in range of layer {0}'s neuron count ({1})", layer, HiddenNeuronCounts[layer]));
+                else if (indexTo >= HiddenNeuronCounts[layer + 1]) throw new IndexOutOfRangeException(string.Format("indexTo must be in range of layer {0}'s neuron count ({1})", layer + 1, HiddenNeuronCounts[layer + 1]));
                 else return connections[layer + 1][indexTo, indexFrom];
             }
         }
@@ -108,6 +108,8 @@ namespace Tic_Tac_Toe_AI
         private readonly ActivationFunction activation;
         private readonly ActivationFunction activationD;
 
+        public ActivationFunctionType ActivationFunctionType { get; set; }
+
         public double LearningRate { get; private set; }
 
         // Main constructor
@@ -117,6 +119,8 @@ namespace Tic_Tac_Toe_AI
             if (inputNeuronCount <= 0) throw new ArgumentException("Input neuron count must be positive, non-zero");
             if (outputNeuronCount <= 0) throw new ArgumentException("Output neuron count must be positive, non-zero");
             if (hiddenNeuronCounts.Contains(0)) throw new ArgumentException("hiddenNeuronsCounts contains zero-length layer, this is illegal");
+
+            ActivationFunctionType = activationFunctionType;
 
             // Input ➡ First Hidden
             connections.Add(0, new DoubleMatrix(hiddenNeuronCounts[0], inputNeuronCount, MatrixInitMode.RanNorm));
@@ -150,6 +154,28 @@ namespace Tic_Tac_Toe_AI
             }
 
             LearningRate = 0.1;
+        }
+
+        [JsonConstructor]
+        public NeuralNetwork(Dictionary<int,DoubleMatrix> connections, Dictionary<int,DoubleMatrix> biases, DoubleMatrix outputBias, double learningRate, ActivationFunctionType activationFunctionType)
+        {
+            this.connections = connections;
+            this.biases = biases;
+            this.outputBias = outputBias;
+            LearningRate = learningRate;
+            switch (activationFunctionType)
+            {
+                case ActivationFunctionType.Sigmoid:
+                    activation = SigmoidActivationFunction;
+                    activationD = SigmoidActivationFunctionDerivative;
+                    break;
+                case ActivationFunctionType.HyperbolicTangent:
+                    activation = HyperbolicTangentActivationFunction;
+                    activationD = HyperbolicTangentActivationFunctionDerivative;
+                    break;
+                default:
+                    break;
+            }
         }
 
         /// <summary>
