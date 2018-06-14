@@ -25,7 +25,7 @@ namespace Tic_Tac_Toe_AI
                 {
                     for (int j = 0; j < Cols; j++)
                     {
-                        Matrix[i, j] = Random.NextDouble();
+                        Matrix[i, j] = Random.NextDouble().Map(0, 1, -1, 1);
                     }
                 }
                 return;

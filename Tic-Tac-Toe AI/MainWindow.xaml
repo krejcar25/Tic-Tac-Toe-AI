@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Tic_Tac_Toe_AI"
         mc:Ignorable="d"
-        Title="MainWindow" Height="500" Width="1050">
+        Title="MainWindow" Height="500" Width="1200" Loaded="window_Loaded">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="400"/>
@@ -105,6 +105,28 @@
                                             </Viewbox>
                                         </Button>
                                     </Grid>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Will play as blue">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Tag="{Binding Network}" Click="playWithNetworkButton_Click" IsEnabled="{Binding Finished}">
+                                        <Viewbox>
+                                            <TextBlock>Play</TextBlock>
+                                        </Viewbox>
+                                    </Button>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="Select red">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <RadioButton GroupName="OtherAI" Tag="{Binding Network}" IsEnabled="{Binding Finished}" Checked="otherNetworkSelectorRadioButton_Checked">
+                                        <Viewbox>
+                                            <TextBlock Text="{Binding Name}"/>
+                                        </Viewbox>
+                                    </RadioButton>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

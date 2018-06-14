@@ -35,6 +35,8 @@ namespace Tic_Tac_Toe_AI
         public string GenerateNetworkButtonTooltip => string.Format("Input layer: {1}{0}Output layer: {2}{0}Hidden layers: {3}",
             Environment.NewLine, (inputNeuronsValid) ? "Success" : "Fail", (outputNeuronsValid) ? "Success" : "Fail", (hiddenLayersValid) ? "Success" : "Fail");
 
+        public NeuralNetwork OtherPlayer = null;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -43,6 +45,8 @@ namespace Tic_Tac_Toe_AI
             hiddenLayersListBox.Items.Add(new HiddenListItem(4));
             CheckCanGenerateNetwork();
             CheckCanAddNewHiddenLayer();
+
+            
         }
 
         private void CheckCanGenerateNetwork()
@@ -218,6 +222,29 @@ namespace Tic_Tac_Toe_AI
                     }
                 }
             }
+        }
+
+        private void window_Loaded(object sender, RoutedEventArgs e)
+        {
+            SingleGame game = new SingleGame(Player.Blue);
+            game.Owner = this;
+            game.Show();
+        }
+
+        private void playWithNetworkButton_Click(object sender, RoutedEventArgs e)
+        {
+            Button button = sender as Button;
+            NeuralNetwork nn = (NeuralNetwork)button.Tag;
+            SingleGame game = new SingleGame(Player.Blue, nn, OtherPlayer);
+            game.Owner = this;
+            game.Show();
+            OtherPlayer = null;
+        }
+
+        private void otherNetworkSelectorRadioButton_Checked(object sender, RoutedEventArgs e)
+        {
+            RadioButton button = sender as RadioButton;
+            OtherPlayer = (NeuralNetwork)button.Tag;
         }
     }
 

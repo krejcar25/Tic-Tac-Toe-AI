@@ -245,7 +245,7 @@ namespace Tic_Tac_Toe_AI
 
         #region Activation Functions
         // Some mathsy shenanigans
-        public static double SigmoidActivationFunction(double value) => 1.0 / (1.0 + Math.Exp(-value));
+        public static double SigmoidActivationFunction(double value) => (2.0 / (1.0 + Math.Exp(-value)) - 1);
 
         public static double SigmoidActivationFunctionDerivative(double value) => value * (1 - value);
 
