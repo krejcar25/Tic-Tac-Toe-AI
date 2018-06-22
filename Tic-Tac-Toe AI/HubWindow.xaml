@@ -1,0 +1,23 @@
+﻿<Window x:Class="Tic_Tac_Toe_AI.HubWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Tic_Tac_Toe_AI"
+        mc:Ignorable="d"
+        Title="Tic-Tac-Toe AI Hub" Height="450" Width="800"
+        DataContext="{Binding Mode=OneWay, RelativeSource={RelativeSource Self}}">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+        <StackPanel>
+            <Viewbox>
+                <TextBlock Text="Open Hub Windows"/>
+            </Viewbox>
+            <Button x:Name="openSingleGameHubWindowButton" Content="{Binding OpenSingleGameHubWindowButton_Content, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:HubWindow}}}" Margin="5" Click="openSingleGameHubWindowButton_Click"/>
+            <Button x:Name="openAITrainingHubWindowButton" Content="{Binding OpenAITrainingHubWindowButton_Content, Mode=OneWay, RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type local:HubWindow}}}" Margin="5" Click="openAITrainingHubWindowButton_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

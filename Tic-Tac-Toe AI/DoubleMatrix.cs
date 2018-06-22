@@ -1,11 +1,24 @@
 ﻿using Newtonsoft.Json;
 using System;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
 
 namespace Tic_Tac_Toe_AI
 {
+    [Serializable]
     public partial class DoubleMatrix
     {
-        public static Random Random = new Random();
+        public static readonly RNGCryptoServiceProvider provider = new RNGCryptoServiceProvider();
+        public static double GetRandom()
+        {
+            var byteArray = new byte[4];
+            provider.GetBytes(byteArray);
+            var randomInteger = BitConverter.ToUInt32(byteArray, 0);
+            double d = ((double)randomInteger).Map(0, uint.MaxValue, -1, 1);
+            return d;
+        }
+
+        public static double GetRandom(double minimum, double maximum) => GetRandom().Map(-1, 1, minimum, maximum);
 
         [JsonProperty]
         private double[,] Matrix { get; set; }
@@ -25,7 +38,7 @@ namespace Tic_Tac_Toe_AI
                 {
                     for (int j = 0; j < Cols; j++)
                     {
-                        Matrix[i, j] = Random.NextDouble().Map(0, 1, -1, 1);
+                        Matrix[i, j] = GetRandom(-0.1, 0.1);
                     }
                 }
                 return;
@@ -36,7 +49,7 @@ namespace Tic_Tac_Toe_AI
                 {
                     for (int j = 0; j < Cols; j++)
                     {
-                        Matrix[i, j] = Random.NextDouble() * Random.Next(int.MinValue, int.MaxValue);
+                        Matrix[i, j] = GetRandom(int.MinValue, int.MaxValue);
                     }
                 }
                 return;
@@ -149,13 +162,13 @@ namespace Tic_Tac_Toe_AI
 
         public static DoubleMatrix operator *(double c, DoubleMatrix mx)
         {
-            for (int i = 0; i < mx.Rows; i++)
+            Parallel.For(0, mx.Rows, (i) =>
             {
-                for (int j = 0; j < mx.Cols; j++)
+                Parallel.For(0, mx.Cols, (j) =>
                 {
                     mx[i, j] *= c;
-                }
-            }
+                });
+            });
             return mx;
         }
 
@@ -163,17 +176,18 @@ namespace Tic_Tac_Toe_AI
         {
             if (a.Cols != b.Rows) throw new ArgumentException("Matrix a's column count must match matrix b's row count");
             DoubleMatrix mx = new DoubleMatrix(a.Rows, b.Cols, MatrixInitMode.Null);
-            for (int i = 0; i < mx.Rows; i++)
+
+            Parallel.For(0, mx.Rows, (i) => //paralelní for, každý cyklus jede na svém vlékně a díky tomu jedou nazávisle na sobě -> úplnější využití CPU
             {
-                for (int j = 0; j < mx.Cols; j++)
-                {
-                    mx[i, j] = 0;
-                    for (int k = 0; k < a.Cols; k++)
-                    {
-                        mx[i, j] += a[i, k] * b[k, j];
-                    }
-                }
-            }
+                Parallel.For(0, mx.Cols, (j) =>
+                  {
+                      mx[i, j] = 0;
+                      for (int k = 0; k < a.Cols; k++)
+                      {
+                          mx[i, j] += a[i, k] * b[k, j];
+                      }
+                  });
+            });
             return mx;
         }
 

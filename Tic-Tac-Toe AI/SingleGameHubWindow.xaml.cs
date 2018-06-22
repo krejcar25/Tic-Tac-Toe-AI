@@ -4,10 +4,14 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 using System.Windows;
+using System.Windows.Automation.Peers;
+using System.Windows.Automation.Provider;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
@@ -22,7 +26,7 @@ namespace Tic_Tac_Toe_AI
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class SingleGameHubWindow : Window
     {
         private bool inputNeuronsValid => int.TryParse(inputCountTextBox.Text, out int inputCount);
         private bool outputNeuronsValid => int.TryParse(outputCountTextBox.Text, out int outputCount);
@@ -35,18 +39,49 @@ namespace Tic_Tac_Toe_AI
         public string GenerateNetworkButtonTooltip => string.Format("Input layer: {1}{0}Output layer: {2}{0}Hidden layers: {3}",
             Environment.NewLine, (inputNeuronsValid) ? "Success" : "Fail", (outputNeuronsValid) ? "Success" : "Fail", (hiddenLayersValid) ? "Success" : "Fail");
 
-        public NeuralNetwork OtherPlayer = null;
+        public string SaveAllNetworksButtonLabel => string.Format("Save all ({0}) networks to a file", networksDataGrid.Items.Count);
 
-        public MainWindow()
+        public NeuralNetwork OtherPlayer
+        {
+            get
+            {
+                foreach (object item in networksDataGrid.Items)
+                {
+                    if (item is NetworkListItem)
+                    {
+                        NetworkListItem listItem = (NetworkListItem)item;
+                        if (listItem.IsOtherPlayerRadioSelected) return listItem.Network;
+                    }
+                }
+                return null;
+            }
+            set
+            {
+                if (value == null)
+                {
+                    foreach (object item in networksDataGrid.Items)
+                    {
+                        if (item is NetworkListItem)
+                        {
+                            NetworkListItem listItem = (NetworkListItem)item;
+                            listItem.IsOtherPlayerRadioSelected = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        public SingleGameHubWindow()
         {
             InitializeComponent();
             DataContext = this;
-            hiddenLayersListBox.Items.Add(new HiddenListItem(3));
-            hiddenLayersListBox.Items.Add(new HiddenListItem(4));
+            hiddenLayersListBox.Items.Add(new HiddenListItem(600));
+            hiddenLayersListBox.Items.Add(new HiddenListItem(600));
+            hiddenLayersListBox.Items.Add(new HiddenListItem(600));
             CheckCanGenerateNetwork();
             CheckCanAddNewHiddenLayer();
 
-            
+            Name = "SingleGameHubWindow";
         }
 
         private void CheckCanGenerateNetwork()
@@ -72,7 +107,15 @@ namespace Tic_Tac_Toe_AI
 
         private void newHiddenLayerNeuronCountTextBox_KeyUp(object sender, KeyEventArgs e)
         {
-            CheckCanAddNewHiddenLayer();
+            e.Handled = true;
+            if (e.Key == Key.Enter)
+            {
+                ((IInvokeProvider)new ButtonAutomationPeer(newHiddenLayerAddButton).GetPattern(PatternInterface.Invoke)).Invoke();
+            }
+            else
+            {
+                CheckCanAddNewHiddenLayer();
+            }
         }
 
         private void newHiddenLayerAddButton_Click(object sender, RoutedEventArgs e)
@@ -126,6 +169,7 @@ namespace Tic_Tac_Toe_AI
             for (int i = 0; i < hiddenLayersListBox.Items.Count; i++) hidden[i] = ((HiddenListItem)hiddenLayersListBox.Items[i]).Count;
             NetworkListItem item = new NetworkListItem(newNetworkNameTextBox.Text, int.Parse(inputCountTextBox.Text), int.Parse(outputCountTextBox.Text), ActivationFunctionType.Sigmoid, hidden);
             networksDataGrid.Items.Add(item);
+            saveAllNetworksButtonLabel.GetBindingExpression(TextBlock.TextProperty).UpdateTarget();
         }
 
         private void showNetworkButton_Click(object sender, RoutedEventArgs e)
@@ -133,6 +177,7 @@ namespace Tic_Tac_Toe_AI
             NeuralNetwork nn = (NeuralNetwork)((Button)sender).Tag;
             NNView view = new NNView(nn);
             view.Owner = this;
+            view.Closed += (senderC, eC) => Focus();
             view.Show();
         }
 
@@ -142,40 +187,59 @@ namespace Tic_Tac_Toe_AI
             Clipboard.SetText(item.ToString());
         }
 
-        private async void saveToFileButton_Click(object sender, RoutedEventArgs e)
+        private void saveToFileButton_Click(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;
             button.IsEnabled = false;
             button.Content = "Working...";
-            NetworkListItem item = (NetworkListItem)button.Tag;
+            List<NetworkListItem> items = (List<NetworkListItem>)button.Tag;
+            SaveListToFile(items);
+            button.Content = "File";
+            button.IsEnabled = true;
+        }
+
+        private void SaveListToFile(List<NetworkListItem> items)
+        {
             Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog();
-            dialog.FileName = item.Name;
+            dialog.FileName = items[0].Name;
             dialog.DefaultExt = ".nni";
             dialog.Filter = "Neural Network Items|*.nni|Neural Networks|*.nn";
             bool? result = dialog.ShowDialog(this);
 
             if (result == true)
             {
-                FileStream fs = (FileStream)dialog.OpenFile();
-                string json;
-                if (dialog.FilterIndex == 1)
+                Stream stream = dialog.OpenFile();
+                BinaryFormatter formatter = new BinaryFormatter();
+                try
                 {
-                    json = await Task.Run(() => JsonConvert.SerializeObject(item, Formatting.Indented));
+                    object graph = null;
+                    if (dialog.FilterIndex == 1)
+                    {
+                        graph = items;
+                    }
+                    else if (dialog.FilterIndex == 2)
+                    {
+                        List<NeuralNetwork> list = new List<NeuralNetwork>();
+                        foreach (NetworkListItem item in items)
+                        {
+                            list.Add(item.Network);
+                        }
+                        graph = list;
+                    }
+                    formatter.Serialize(stream, graph);
                 }
-                else if (dialog.FilterIndex == 2)
+                catch (SerializationException ex)
                 {
-                    json = await Task.Run(() => JsonConvert.SerializeObject(item.Network, Formatting.Indented));
+                    MessageBox.Show(string.Format("Serialization exception: {0}", ex.Message), "Serialization exception occured", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-                else
+                catch (NullReferenceException)
                 {
-                    return;
+                    MessageBox.Show("Wrong file type selected", "Null reference exception occured", MessageBoxButton.OK, MessageBoxImage.Error);
                 }
-                byte[] jsonB = new UTF8Encoding(true).GetBytes(json);
-                fs.Write(jsonB, 0, jsonB.Length);
-                fs.Close();
+                stream.Flush();
+                stream.Close();
+                stream = null;
             }
-            button.Content = "File";
-            button.IsEnabled = true;
         }
 
         private void networksDataGrid_KeyDown(object sender, KeyEventArgs e)
@@ -187,7 +251,7 @@ namespace Tic_Tac_Toe_AI
             }
         }
 
-        private async void importNetworkButton_Click(object sender, RoutedEventArgs e)
+        private void importNetworkButton_Click(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.Filter = "Neural Network Items|*.nni|Neural Networks|*.nn|All supported items|*.nni;*.nn";
@@ -197,54 +261,148 @@ namespace Tic_Tac_Toe_AI
             if (result == true)
             {
                 Stream[] fss = dialog.OpenFiles();
+                BinaryFormatter formatter = new BinaryFormatter();
                 foreach (FileStream fs in fss)
                 {
                     string ext = System.IO.Path.GetExtension(fs.Name);
                     if (ext == ".nni")
                     {
-                        using (StreamReader reader = new StreamReader(fs))
+                        List<NetworkListItem> items = (List<NetworkListItem>)formatter.Deserialize(fs);
+                        foreach (NetworkListItem item in items)
                         {
-                            NetworkListItem item = await Task.Run(() => JsonConvert.DeserializeObject<NetworkListItem>(reader.ReadToEnd()));
                             networksDataGrid.Items.Add(item);
+                            item.Finished = true;
+                            saveAllNetworksButtonLabel.GetBindingExpression(TextBlock.TextProperty).UpdateTarget();
                         }
                     }
                     else if (ext == ".nn")
                     {
-                        using (StreamReader reader = new StreamReader(fs))
+                        List<NeuralNetwork> nns = (List<NeuralNetwork>)formatter.Deserialize(fs);
+                        int i = 0;
+                        foreach (NeuralNetwork nn in nns)
                         {
-                            NeuralNetwork nn = await Task.Run(() => JsonConvert.DeserializeObject<NeuralNetwork>(reader.ReadToEnd()));
-                            NetworkListItem item = new NetworkListItem(fs.Name, nn);
+                            NetworkListItem item = new NetworkListItem(string.Format("{0}_{1}", fs.Name, i), nn);
+                            networksDataGrid.Items.Add(item);
+                            item.Finished = true;
+                            saveAllNetworksButtonLabel.GetBindingExpression(TextBlock.TextProperty).UpdateTarget();
                         }
                     }
                     else
                     {
                         MessageBox.Show(string.Format("The file {0} has incorrect file extension and couldn't be opened", fs.Name), "File can't be opened", MessageBoxButton.OK, MessageBoxImage.Error);
                     }
+                    fs.Flush();
+                    fs.Close();
                 }
             }
-        }
-
-        private void window_Loaded(object sender, RoutedEventArgs e)
-        {
-            SingleGame game = new SingleGame(Player.Blue);
-            game.Owner = this;
-            game.Show();
         }
 
         private void playWithNetworkButton_Click(object sender, RoutedEventArgs e)
         {
             Button button = sender as Button;
             NeuralNetwork nn = (NeuralNetwork)button.Tag;
-            SingleGame game = new SingleGame(Player.Blue, nn, OtherPlayer);
+            SingleGameWindow game = new SingleGameWindow(Player.Blue, nn, OtherPlayer);
             game.Owner = this;
             game.Show();
             OtherPlayer = null;
         }
 
-        private void otherNetworkSelectorRadioButton_Checked(object sender, RoutedEventArgs e)
+        private void openFreeGameButton_Click(object sender, RoutedEventArgs e)
         {
-            RadioButton button = sender as RadioButton;
-            OtherPlayer = (NeuralNetwork)button.Tag;
+            SingleGameWindow game = new SingleGameWindow(Player.Blue);
+            game.Owner = this;
+            game.Show();
+        }
+
+        private void saveAllNetworksButton_Click(object sender, RoutedEventArgs e)
+        {
+            List<NetworkListItem> items = new List<NetworkListItem>();
+            foreach (object item in networksDataGrid.Items)
+            {
+                if (item is NetworkListItem)
+                {
+                    items.Add((NetworkListItem)item);
+                }
+            }
+            SaveListToFile(items);
+        }
+
+        private void generateMultipleNetworksButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (int.TryParse(batchGenerationCountTextBox.Text, out int count))
+            {
+                string oldText = generateMultipleNetworksButtonLabel.Text;
+                generateMultipleNetworksButtonLabel.Text = "Working...";
+                generateMultipleNetworksButtonLabel.IsEnabled = false;
+                BackgroundWorker worker = new BackgroundWorker();
+                worker.WorkerReportsProgress = false;
+                worker.WorkerSupportsCancellation = false;
+                worker.DoWork += (senderW, eW) =>
+                {
+                    Tuple<int, string, int, int, ActivationFunctionType, int[]> data = (Tuple<int, string, int, int, ActivationFunctionType, int[]>)eW.Argument;
+                    List<NetworkListItem> networks = new List<NetworkListItem>();
+                    Parallel.For(0, data.Item1, (i) => networks.Add(new NetworkListItem(string.Format("{0}-{1}", data.Item2, i), data.Item3, data.Item4, data.Item5, data.Item6)));
+                    eW.Result = networks;
+
+                };
+                worker.RunWorkerCompleted += (senderW, eW) =>
+                {
+                    List<NetworkListItem> networks = (List<NetworkListItem>)eW.Result;
+                    SaveListToFile(networks);
+                    generateMultipleNetworksButtonLabel.Text = oldText;
+                    generateMultipleNetworksButtonLabel.IsEnabled = true;
+                };
+                int[] hidden = new int[hiddenLayersListBox.Items.Count];
+                for (int i = 0; i < hiddenLayersListBox.Items.Count; i++) hidden[i] = ((HiddenListItem)hiddenLayersListBox.Items[i]).Count;
+                Tuple<int, string, int, int, ActivationFunctionType, int[]> argument = new Tuple<int, string, int, int, ActivationFunctionType, int[]>(
+                    count,
+                    newNetworkNameTextBox.Text,
+                    int.Parse(inputCountTextBox.Text),
+                    int.Parse(outputCountTextBox.Text),
+                    ActivationFunctionType.Sigmoid,
+                    hidden);
+                worker.RunWorkerAsync(argument);
+            }
+        }
+
+        private void hiddenLayersListBox_KeyUp(object sender, KeyEventArgs e)
+        {
+            Button button;
+            switch (e.Key)
+            {
+                case Key.Up:
+                    button = hiddenNeuronUpButton;
+                    break;
+                case Key.Delete:
+                    button = hiddenNeuronRemoveButton;
+                    break;
+                case Key.Down:
+                    button = hiddenNeuronDownButton;
+                    break;
+                default:
+                    button = null;
+                    break;
+            }
+            if (button != null)
+            {
+                e.Handled = true;
+                ((IInvokeProvider)new ButtonAutomationPeer(button).GetPattern(PatternInterface.Invoke)).Invoke();
+            }
+        }
+
+        private void hiddenLayersListBox_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            switch (e.Key)
+            {
+                case Key.Left:
+                case Key.Right:
+                case Key.Up:
+                case Key.Down:
+                    e.Handled = true;
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
@@ -262,6 +420,7 @@ namespace Tic_Tac_Toe_AI
         }
     }
 
+    [Serializable]
     public class NetworkListItem : INotifyPropertyChanged
     {
         public string Name
@@ -281,8 +440,8 @@ namespace Tic_Tac_Toe_AI
             get => _genTime;
             set
             {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("GenTime"));
                 _genTime = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("GenTime"));
             }
         }
         public int InputNeuronCount
@@ -290,8 +449,8 @@ namespace Tic_Tac_Toe_AI
             get => _inputNeuronCount;
             set
             {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("InputNeuronCount"));
                 _inputNeuronCount = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("InputNeuronCount"));
             }
         }
         public int OutputNeuronCount
@@ -299,8 +458,8 @@ namespace Tic_Tac_Toe_AI
             get => _outputNeuronCount;
             set
             {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("OutputNeuronCount"));
                 _outputNeuronCount = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("OutputNeuronCount"));
             }
         }
         public int[] HiddenNeuronCounts
@@ -308,9 +467,9 @@ namespace Tic_Tac_Toe_AI
             get => _hiddenNeuronCounts;
             set
             {
+                _hiddenNeuronCounts = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("HiddenNeuronCounts"));
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("HiddenLayerCount"));
-                _hiddenNeuronCounts = value;
             }
         }
         public ActivationFunctionType ActivationFunctionType
@@ -318,19 +477,47 @@ namespace Tic_Tac_Toe_AI
             get => _activationFunctionType;
             set
             {
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ActivationFunctionType"));
                 _activationFunctionType = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("ActivationFunctionType"));
             }
         }
-        
-        public bool Finished { get; set; }
+        public bool IsOtherPlayerRadioSelected
+        {
+            get => _isOtherPlayerRadioSelected;
+            set
+            {
+                _isOtherPlayerRadioSelected = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("IsOtherPlayerRadioSelected"));
+            }
+        }
+        public bool Finished
+        {
+            get => _finished;
+            set
+            {
+                _finished = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Finished"));
+            }
+        }
+
         [JsonIgnore]
         public int HiddenLayerCount => HiddenNeuronCounts.Length;
         [JsonIgnore]
         public NetworkListItem ThisItem => this;
+        [JsonIgnore]
+        public List<NetworkListItem> ThisAsList
+        {
+            get
+            {
+                List<NetworkListItem> list = new List<NetworkListItem>();
+                list.Add(this);
+                return list;
+            }
+        }
 
-
+        [NonSerialized]
         private BackgroundWorker GenerateNetworkWorker;
+        [NonSerialized]
         private Timer RefreshItemTimer;
 
         private string _genTime;
@@ -339,7 +526,10 @@ namespace Tic_Tac_Toe_AI
         private int _outputNeuronCount;
         private int[] _hiddenNeuronCounts;
         private ActivationFunctionType _activationFunctionType;
+        private bool _isOtherPlayerRadioSelected;
+        private bool _finished;
 
+        [field: NonSerialized]
         public event PropertyChangedEventHandler PropertyChanged;
 
         public NetworkListItem(string name, int inputNeuronCount, int outputNeuronCount, ActivationFunctionType activationFunctionType, params int[] hiddenNeuronCounts)
@@ -412,11 +602,6 @@ namespace Tic_Tac_Toe_AI
             Finished = true;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Finished"));
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs("Network"));
-        }
-
-        public override string ToString()
-        {
-            return JsonConvert.SerializeObject(this);
         }
     }
 }

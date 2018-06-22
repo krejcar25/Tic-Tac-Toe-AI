@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,11 +20,13 @@ namespace Tic_Tac_Toe_AI
     /// <summary>
     /// Interaction logic for SingleGame.xaml
     /// </summary>
-    public partial class SingleGame : Window, INotifyPropertyChanged
+    public partial class SingleGameWindow : Window, INotifyPropertyChanged
     {
         Button[,] GameButtons = new Button[20, 20];
 
         Dictionary<Player, ControlTemplate> ButtonStyles = new Dictionary<Player, ControlTemplate>();
+
+        public event LetAIPlayEventHandler LetAIPlay;
 
         public int ThreeRowScore { get; set; } = 1;
         public int FourRowScore { get; set; } = 10;
@@ -76,11 +80,16 @@ namespace Tic_Tac_Toe_AI
             }
         }
 
-        Dictionary<Player, NeuralNetwork> ArtificialPlayers = new Dictionary<Player, NeuralNetwork>();
+        Dictionary<Player, IArtificialPlayer> ArtificialPlayers = new Dictionary<Player, IArtificialPlayer>();
+
+        public GameLog Log { get; set; }
+        public List<GameLog> FinishedLogs { get; private set; }
+
+        public int Move { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
-        public SingleGame(Player first)
+        public SingleGameWindow(Player first)
         {
             InitializeComponent();
 
@@ -89,7 +98,7 @@ namespace Tic_Tac_Toe_AI
             Title += " - PvP";
         }
 
-        public SingleGame(Player first, NeuralNetwork neuralNetwork1, NeuralNetwork neuralNetwork2 = null)
+        public SingleGameWindow(Player first, NeuralNetwork neuralNetwork1, NeuralNetwork neuralNetwork2 = null)
         {
             InitializeComponent();
 
@@ -102,35 +111,78 @@ namespace Tic_Tac_Toe_AI
             ArtificialPlayers[OtherPlayer] = neuralNetwork2;
 
             Title += (neuralNetwork2 == null) ? " - PvAI" : " - AIvAI";
-
-            LetAIPlay();
         }
 
-        public void CheckNetworkDimensions(NeuralNetwork network)
+        public SingleGameWindow(GameLog gameLog)
+        {
+            InitializeComponent();
+
+            InitializeGame(gameLog.FirstPlayer);
+
+            CheckNetworkDimensions(gameLog);
+            CheckNetworkDimensions(gameLog);
+
+            ArtificialPlayers[CurrentPlayer] = gameLog;
+            ArtificialPlayers[OtherPlayer] = gameLog;
+
+            Title += " - Replay";
+        }
+
+        public void CheckNetworkDimensions(IArtificialPlayer network)
         {
             if (network == null) return;
-            if (!(network.InputNeuronCount == GameSizeX * GameSizeY) && (network.OutputNeuronCount == 2))
+            if (!(network.CheckInputNeuronCount(GameSizeX * GameSizeY) && network.CheckOutputNeuronCount(GameSizeX * GameSizeY)))
             {
                 throw new ArgumentException(string.Format("Network has bad dimensions. Required dimensions are: {0} input, 2 output", GameSizeX * GameSizeY));
             }
         }
 
-        private void LetAIPlay(int rotate = 0)
+        private void SingleGame_LetAIPlay(object sender, LetAIPlayEventArgs e)
         {
-            DoubleMatrix predict = ArtificialPlayers[CurrentPlayer]?.Predict(GetCurrentGameField(rotate));
-            PlayByMatrix(predict, rotate);
+            PlayByMatrix(ArtificialPlayers[CurrentPlayer]?.Predict(GetCurrentGameField(), Move));
         }
 
-        public void PlayByMatrix(DoubleMatrix mx, int rotate)
+        public void PlayByMatrix(DoubleMatrix mx)
         {
-            if (mx == null) return;
+            if (mx == null) return;/*
             double xD = mx[0, 0].Map(-1, 1, 0, GameSizeX);
             double yD = mx[1, 0].Map(-1, 1, 0, GameSizeY);
-            int x = (int)Math.Floor(xD);
-            int y = (int)Math.Floor(yD);
 
-            if (rotate < 4 && !PlaySelected(GameButtons[x, y])) LetAIPlay(rotate + 1);
-            else if (rotate >= 4) MessageBox.Show("AI can't play now!", "AI Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            int x = (int)Math.Floor(xD);
+            int y = (int)Math.Floor(yD);*/
+
+            //DoubleMatrix playing = new DoubleMatrix(GameSizeY, GameSizeX, MatrixInitMode.Null);
+
+            double record = double.MinValue;
+            int recX = -1;
+            int recY = -1;
+
+            for (int y = 0; y < GameSizeY; y++)
+            {
+                for (int x = 0; x < GameSizeX; x++)
+                {
+                    double current = mx[y * GameSizeX + x, 0];
+                    if (current > record && !((GameButtonProperties)GameButtons[x, y].Tag).Taken)
+                    {
+                        recX = x;
+                        recY = y;
+                        record = current;
+                    }
+                }
+            }
+            try
+            {
+                bool played = PlaySelected(GameButtons[recX, recY]);
+                if (!played) MessageBox.Show("AI can't play now!", "AI Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+            catch (IndexOutOfRangeException)
+            {
+                MessageBox.Show("Game grid is full");
+            }
+
+            /*
+            if (rotate < 4 && !PlaySelected(GameButtons[x, y])) LetAIPlay?.Invoke(this, new LetAIPlayEventArgs(rotate + 1));
+            else if (rotate >= 4) MessageBox.Show("AI can't play now!", "AI Error", MessageBoxButton.OK, MessageBoxImage.Error);*/
         }
 
         private void InitializeGame(Player first)
@@ -144,6 +196,12 @@ namespace Tic_Tac_Toe_AI
 
             CurrentPlayer = first;
             GameIsPlaying = true;
+
+            LetAIPlay += SingleGame_LetAIPlay;
+            Move = 0;
+
+            Log = new GameLog(first);
+            FinishedLogs = new List<GameLog>();
 
             Border border = new Border();
             border.SetValue(Grid.ColumnSpanProperty, GameButtons.GetLength(0));
@@ -179,15 +237,16 @@ namespace Tic_Tac_Toe_AI
             ScoreBlue = 0;
         }
 
-        public DoubleMatrix GetCurrentGameField(int rotate)
+        public DoubleMatrix GetCurrentGameField()
         {
             DoubleMatrix matrix = new DoubleMatrix(GameSizeX * GameSizeY, 1, MatrixInitMode.Null);
 
             Button[,] buttons = GameButtons;
+            /*
             for (int i = 0; i < rotate; i++)
             {
                 buttons = RotateMatrixCounterClockwise(buttons);
-            }
+            }*/
 
             for (int i = 0; i < GameSizeY; i++)
             {
@@ -215,7 +274,9 @@ namespace Tic_Tac_Toe_AI
                 properties.Owner = CurrentPlayer;
                 CurrentPlayer = OtherPlayer;
                 CalculateScore();
-                LetAIPlay();
+                Move++;
+                Log.Push(properties.X, properties.Y);
+                LetAIPlay?.Invoke(this, new LetAIPlayEventArgs());
                 return true;
             }
             else return false;
@@ -308,29 +369,29 @@ namespace Tic_Tac_Toe_AI
                                     score += ThreeRowScore;
                                 }
                             }
+                        }
 
-                            if (i - 1 >= 0 && j + 1 < sizeY && GetButtonPlayer(i - 1, j + 1) == properties.Owner)
+                        if (i - 1 >= 0 && j + 1 < sizeY && GetButtonPlayer(i - 1, j + 1) == properties.Owner)
+                        {
+                            if (i - 2 >= 0 && j + 2 < sizeY && GetButtonPlayer(i - 2, j + 2) == properties.Owner)
                             {
-                                if (i - 2 >= 0 && j + 2 < sizeY && GetButtonPlayer(i - 2, j + 2) == properties.Owner)
+                                if (i - 3 >= 0 && j + 3 < sizeY && GetButtonPlayer(i - 3, j + 3) == properties.Owner)
                                 {
-                                    if (i - 3 >= 0 && j + 3 < sizeY && GetButtonPlayer(i - 3, j + 3) == properties.Owner)
+                                    if (i - 4 >= 0 && j + 4 < sizeY && GetButtonPlayer(i - 4, j + 4) == properties.Owner)
                                     {
-                                        if (i - 4 >= 0 && j + 4 < sizeY && GetButtonPlayer(i - 4, j + 4) == properties.Owner)
-                                        {
-                                            score += FiveRowScore;
-                                            score -= FourRowScore;
-                                            FoundFive(properties.Owner);
-                                        }
-                                        else
-                                        {
-                                            score += FourRowScore;
-                                            score -= ThreeRowScore;
-                                        }
+                                        score += FiveRowScore;
+                                        score -= FourRowScore;
+                                        FoundFive(properties.Owner);
                                     }
                                     else
                                     {
-                                        score += ThreeRowScore;
+                                        score += FourRowScore;
+                                        score -= ThreeRowScore;
                                     }
+                                }
+                                else
+                                {
+                                    score += ThreeRowScore;
                                 }
                             }
                         }
@@ -360,6 +421,8 @@ namespace Tic_Tac_Toe_AI
             PlayerIndicatorButton.Template = ButtonStyles[Player.None];
             PlayerIndicatorButton.IsEnabled = true;
             GameIsPlaying = false;
+            Log.Seal();
+            FinishedLogs.Add(Log);
             MessageBox.Show(string.Format("Player {0} won!", winner.ToString()), "Game over", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
@@ -382,6 +445,9 @@ namespace Tic_Tac_Toe_AI
                 }
             }
             GameIsPlaying = true;
+            CurrentPlayer = Log.FirstPlayer;
+            Log = new GameLog(CurrentPlayer);
+            LetAIPlay?.Invoke(this, new LetAIPlayEventArgs());
         }
 
         public static T[,] RotateMatrixCounterClockwise<T>(T[,] oldMatrix)
@@ -399,6 +465,41 @@ namespace Tic_Tac_Toe_AI
                 newRow++;
             }
             return newMatrix;
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            LetAIPlay?.Invoke(this, new LetAIPlayEventArgs());
+        }
+
+        private async void Window_Closing(object sender, CancelEventArgs e)
+        {
+            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog();
+            dialog.FileName = "TicTacToeGameLogs";
+            dialog.DefaultExt = ".jlog";
+            dialog.Filter = "JSON Log Files|*.jlog";
+            bool? result = dialog.ShowDialog(this);
+
+            if (result == true)
+            {
+                FileStream fs = (FileStream)dialog.OpenFile();
+                string json = await Task.Run(() => JsonConvert.SerializeObject(FinishedLogs, Formatting.Indented));
+                byte[] jsonB = new UTF8Encoding(true).GetBytes(json);
+                fs.Write(jsonB, 0, jsonB.Length);
+                fs.Close();
+            }
+        }
+    }
+
+    public delegate void LetAIPlayEventHandler(object sender, LetAIPlayEventArgs e);
+
+    public class LetAIPlayEventArgs : EventArgs
+    {
+        public int Rotate { get; set; }
+
+        public LetAIPlayEventArgs(int rotate = 0)
+        {
+            Rotate = rotate;
         }
     }
 
@@ -428,5 +529,4 @@ namespace Tic_Tac_Toe_AI
         }
 
     }
-
 }

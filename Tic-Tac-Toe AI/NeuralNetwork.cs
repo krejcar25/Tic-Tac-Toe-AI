@@ -2,13 +2,16 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace Tic_Tac_Toe_AI
 {
-    public partial class NeuralNetwork
+    [Serializable]
+    public partial class NeuralNetwork : IArtificialPlayer
     {
         // Self-explanatory properties
         /// <summary>
@@ -157,7 +160,7 @@ namespace Tic_Tac_Toe_AI
         }
 
         [JsonConstructor]
-        public NeuralNetwork(Dictionary<int,DoubleMatrix> connections, Dictionary<int,DoubleMatrix> biases, DoubleMatrix outputBias, double learningRate, ActivationFunctionType activationFunctionType)
+        public NeuralNetwork(Dictionary<int, DoubleMatrix> connections, Dictionary<int, DoubleMatrix> biases, DoubleMatrix outputBias, double learningRate, ActivationFunctionType activationFunctionType)
         {
             this.connections = connections;
             this.biases = biases;
@@ -183,7 +186,7 @@ namespace Tic_Tac_Toe_AI
         /// </summary>
         /// <param name="input">Input values, must have the same number of rows as input neurons</param>
         /// <returns>A DoubleMatrix that represents outputs from this Neural Network</returns>
-        public DoubleMatrix Predict(DoubleMatrix input)
+        public DoubleMatrix Predict(DoubleMatrix input, int count)
         {
             return Predict(input, out List<DoubleMatrix> hiddenLayers);
         }
@@ -243,6 +246,48 @@ namespace Tic_Tac_Toe_AI
 
         }*/
 
+        public void Mutate(double percentageChoose, double rangeMutate = double.NaN)
+        {
+            double rangeMutateMax = (double.IsNaN(rangeMutate)) ? LearningRate : rangeMutate;
+            double rangeMutateMin = -rangeMutateMax;
+
+            Parallel.For(0, connections.Count, (con) =>
+            {
+                Parallel.For(0, connections[con].Cols, (x) =>
+                {
+                    Parallel.For(0, connections[con].Rows, (y) =>
+                    {
+                        if (DoubleMatrix.GetRandom(0, 1) < percentageChoose)
+                        {
+                            connections[con][y, x] += DoubleMatrix.GetRandom(rangeMutateMin, rangeMutateMax);
+                        }
+                    });
+                });
+            });
+
+            Parallel.For(0, biases.Count, (b) =>
+            {
+                Parallel.For(0, biases[b].Cols, (x) =>
+                {
+                    Parallel.For(0, biases[b].Rows, (y) =>
+                    {
+                        if (DoubleMatrix.GetRandom(0, 1) < percentageChoose)
+                        {
+                            biases[b][y, x] += DoubleMatrix.GetRandom(rangeMutateMin, rangeMutateMax);
+                        }
+                    });
+                });
+            });
+        }
+
+        public NeuralNetwork Clone()
+        {
+            MemoryStream stream = new MemoryStream();
+            BinaryFormatter formatter = new BinaryFormatter();
+            formatter.Serialize(stream, this);
+            return (NeuralNetwork)formatter.Deserialize(stream);
+        }
+
         #region Activation Functions
         // Some mathsy shenanigans
         public static double SigmoidActivationFunction(double value) => (2.0 / (1.0 + Math.Exp(-value)) - 1);
@@ -255,6 +300,16 @@ namespace Tic_Tac_Toe_AI
         #endregion
 
         public override string ToString() => JsonConvert.SerializeObject(this, Formatting.Indented);
+
+        public bool CheckInputNeuronCount(int desiredCount)
+        {
+            return InputNeuronCount == desiredCount;
+        }
+
+        public bool CheckOutputNeuronCount(int desiredCount)
+        {
+            return OutputNeuronCount == desiredCount;
+        }
     }
 
     public delegate double ActivationFunction(double value);

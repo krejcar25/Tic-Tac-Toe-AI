@@ -1,26 +1,41 @@
-﻿<Window x:Name="window" x:Class="Tic_Tac_Toe_AI.MainWindow"
+﻿<Window x:Name="window" x:Class="Tic_Tac_Toe_AI.SingleGameHubWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:Tic_Tac_Toe_AI"
         mc:Ignorable="d"
-        Title="MainWindow" Height="500" Width="1200" Loaded="window_Loaded">
+        Title="MainWindow" Height="500" Width="1200">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition/>
+            <RowDefinition Height="50"/>
+        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="400"/>
             <ColumnDefinition/>
+            <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        <GroupBox Header="New Neural Network" Margin="10,10,10,0" Height="450" VerticalAlignment="Top">
-            <Grid Margin="0,0,-2,-12">
+        <GroupBox Header="New Neural Network" Margin="10,10,10,0" Height="450" VerticalAlignment="Top" Grid.RowSpan="2">
+            <Grid Margin="0,0,-2,-2">
+                <Grid.RowDefinitions>
+                    <RowDefinition/>
+                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="50"/>
+                    <RowDefinition Height="50"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
                 <Label Content="Network name:" HorizontalAlignment="Left" Margin="7,21,0,0" VerticalAlignment="Top"/>
-                <TextBox x:Name="newNetworkNameTextBox" HorizontalAlignment="Left" Height="23" Margin="137,25,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Text="Name"/>
+                <TextBox x:Name="newNetworkNameTextBox" HorizontalAlignment="Left" Height="23" Margin="137,25,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="120" Text="Test" Grid.ColumnSpan="2" TabIndex="0"/>
                 <Label Content="Input neuron count:" HorizontalAlignment="Left" Margin="7,50,0,0" VerticalAlignment="Top"/>
-                <TextBox x:Name="inputCountTextBox" HorizontalAlignment="Left" Height="23" Margin="137,53,0,0" TextWrapping="Wrap" Text="2" VerticalAlignment="Top" Width="120" KeyUp="inputCountTextBox_KeyUp"/>
+                <TextBox x:Name="inputCountTextBox" HorizontalAlignment="Left" Height="23" Margin="137,53,0,0" TextWrapping="Wrap" Text="400" VerticalAlignment="Top" Width="120" KeyUp="inputCountTextBox_KeyUp" Grid.ColumnSpan="2" TabIndex="1"/>
                 <Label Content="Output neuron count:" HorizontalAlignment="Left" Margin="7,77,0,0" VerticalAlignment="Top"/>
-                <TextBox x:Name="outputCountTextBox" Height="23" Margin="137,81,0,0" TextWrapping="Wrap" Text="5" VerticalAlignment="Top" HorizontalAlignment="Left" Width="120" KeyUp="outputCountTextBox_KeyUp"/>
-                <GroupBox Header="Hidden neurons" Margin="10,109,10,79">
-                    <Grid Margin="0,0,-2,-12">
+                <TextBox x:Name="outputCountTextBox" Height="23" Margin="137,81,0,0" TextWrapping="Wrap" Text="400" VerticalAlignment="Top" HorizontalAlignment="Left" Width="120" KeyUp="outputCountTextBox_KeyUp" Grid.ColumnSpan="2" TabIndex="3"/>
+                <GroupBox Header="Hidden neurons" Margin="10,109,10,10" Grid.ColumnSpan="2">
+                    <Grid Margin="0,0,-2,2">
                         <Grid.RowDefinitions>
                             <RowDefinition/>
                             <RowDefinition Height="40"/>
@@ -33,42 +48,48 @@
                             <ColumnDefinition/>
                             <ColumnDefinition Width="40"/>
                         </Grid.ColumnDefinitions>
-                        <Button x:Name="hiddenNeuronUpButton" Grid.Column="2" Grid.Row="1" HorizontalAlignment="Left" Width="40" Click="hiddenNeuronUpButton_Click">
+                        <Button x:Name="hiddenNeuronUpButton" Grid.Column="2" Grid.Row="1" HorizontalAlignment="Left" Width="40" Click="hiddenNeuronUpButton_Click" IsTabStop="False">
                             <Viewbox>
                                 <TextBlock Text="&#11165;"/>
                             </Viewbox>
                         </Button>
-                        <Button x:Name="hiddenNeuronRemoveButton" Grid.Column="2" Grid.Row="2" Click="hiddenNeuronRemoveButton_Click">
+                        <Button x:Name="hiddenNeuronRemoveButton" Grid.Column="2" Grid.Row="2" Click="hiddenNeuronRemoveButton_Click" IsTabStop="False">
                             <Viewbox>
                                 <TextBlock Text="&#10006;"/>
                             </Viewbox>
                         </Button>
-                        <Button x:Name="hiddenNeuronDownButton" Grid.Column="2" Grid.Row="3" Click="hiddenNeuronDownButton_Click">
+                        <Button x:Name="hiddenNeuronDownButton" Grid.Column="2" Grid.Row="3" Click="hiddenNeuronDownButton_Click" IsTabStop="False">
                             <Viewbox>
                                 <TextBlock Text="&#11167;"/>
                             </Viewbox>
                         </Button>
-                        <ListBox x:Name="hiddenLayersListBox" Grid.Column="1" Margin="10" Grid.RowSpan="5"/>
+                        <ListBox x:Name="hiddenLayersListBox" Grid.Column="1" Margin="10" Grid.RowSpan="5" KeyUp="hiddenLayersListBox_KeyUp" PreviewKeyDown="hiddenLayersListBox_PreviewKeyDown" TabIndex="5"/>
                         <Label Content="Neuron count" HorizontalAlignment="Left" Height="25" Margin="10,10,0,0" VerticalAlignment="Top" Width="86"/>
-                        <TextBox x:Name="newHiddenLayerNeuronCountTextBox" Margin="10" Grid.Row="1" TextWrapping="Wrap" Text="2" KeyUp="newHiddenLayerNeuronCountTextBox_KeyUp"/>
-                        <Button x:Name="newHiddenLayerAddButton" Content="Add" Margin="10" Grid.Row="2" Click="newHiddenLayerAddButton_Click"/>
+                        <TextBox x:Name="newHiddenLayerNeuronCountTextBox" Margin="10" Grid.Row="1" TextWrapping="Wrap" Text="2" KeyUp="newHiddenLayerNeuronCountTextBox_KeyUp" TabIndex="4"/>
+                        <Button x:Name="newHiddenLayerAddButton" Content="Add" Margin="10" Grid.Row="2" Click="newHiddenLayerAddButton_Click" IsTabStop="False"/>
                     </Grid>
                 </GroupBox>
-                <Button x:Name="generateNetworkButton" Margin="10,315,10,70" Click="generateNetworkButton_Click">
+                <TextBox x:Name="batchGenerationCountTextBox" Text="100" Grid.Row="1" Margin="5" TabIndex="6"/>
+                <Button x:Name="generateMultipleNetworksButton" Margin="5" Click="generateMultipleNetworksButton_Click" Grid.Column="1"  Grid.Row="1" IsEnabled="{Binding IsEnabled, ElementName=generateNetworkButton}" TabIndex="7">
+                    <Viewbox>
+                        <TextBlock x:Name="generateMultipleNetworksButtonLabel" Text="Generate multiple networks"/>
+                    </Viewbox>
+                </Button>
+                <Button x:Name="generateNetworkButton" Margin="5" Click="generateNetworkButton_Click" Grid.ColumnSpan="2" Grid.Row="2" TabIndex="8">
                     <Viewbox>
                         <TextBlock Text="Generate network"/>
                     </Viewbox>
                 </Button>
-                <Button x:Name="importNetworkButton" Margin="10,373,10,12" Click="importNetworkButton_Click">
+                <Button x:Name="importNetworkButton" Margin="5" Click="importNetworkButton_Click" Grid.ColumnSpan="2" Grid.Row="3" TabIndex="9">
                     <Viewbox>
                         <TextBlock Text="Import JSON"/>
                     </Viewbox>
                 </Button>
             </Grid>
         </GroupBox>
-        <GroupBox Header="Existing Neural Networks" Margin="10" Grid.Column="1">
+        <GroupBox Header="Existing Neural Networks" Margin="10" Grid.Column="1" Grid.ColumnSpan="2">
             <Grid Margin="0,0,-2,-12">
-                <DataGrid x:Name="networksDataGrid" Margin="10" SelectionMode="Single" SelectionUnit="FullRow" KeyDown="networksDataGrid_KeyDown">
+                <DataGrid x:Name="networksDataGrid" Margin="10" SelectionMode="Single" SelectionUnit="FullRow" KeyDown="networksDataGrid_KeyDown" IsReadOnly="True">
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Name" Binding="{Binding Name}" FontWeight="Bold"/>
                         <DataGridTextColumn Header="Input neurons" Binding="{Binding InputNeuronCount}"/>
@@ -94,12 +115,12 @@
                                             <ColumnDefinition/>
                                             <ColumnDefinition/>
                                         </Grid.ColumnDefinitions>
-                                        <Button Tag="{Binding ThisItem}" Click="copyToClipboardButton_Click" IsEnabled="{Binding Finished}">
+                                        <Button Tag="{Binding ThisAsList}" Click="copyToClipboardButton_Click" IsEnabled="{Binding Finished}">
                                             <Viewbox>
                                                 <TextBlock>Clipboard</TextBlock>
                                             </Viewbox>
                                         </Button>
-                                        <Button Tag="{Binding ThisItem}" Click="saveToFileButton_Click" IsEnabled="{Binding Finished}" Grid.Column="1">
+                                        <Button Tag="{Binding ThisAsList}" Click="saveToFileButton_Click" IsEnabled="{Binding Finished}" Grid.Column="1">
                                             <Viewbox>
                                                 <TextBlock>File</TextBlock>
                                             </Viewbox>
@@ -122,7 +143,7 @@
                         <DataGridTemplateColumn Header="Select red">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <RadioButton GroupName="OtherAI" Tag="{Binding Network}" IsEnabled="{Binding Finished}" Checked="otherNetworkSelectorRadioButton_Checked">
+                                    <RadioButton GroupName="OtherAI" IsEnabled="{Binding Finished}" IsChecked="{Binding IsOtherPlayerRadioSelected, Mode=TwoWay, UpdateSourceTrigger=LostFocus}">
                                         <Viewbox>
                                             <TextBlock Text="{Binding Name}"/>
                                         </Viewbox>
@@ -134,6 +155,16 @@
                 </DataGrid>
             </Grid>
         </GroupBox>
+        <Button x:Name="openFreeGameButton" Grid.Column="1" Margin="10" Grid.Row="1" Click="openFreeGameButton_Click" TabIndex="10">
+            <Viewbox>
+                <TextBlock Text="Open PvP game window"/>
+            </Viewbox>
+        </Button>
+        <Button x:Name="saveAllNetworksButton" Grid.Column="2" Margin="10" Grid.Row="1" Click="saveAllNetworksButton_Click" TabIndex="11">
+            <Viewbox>
+                <TextBlock x:Name="saveAllNetworksButtonLabel" Text="{Binding SaveAllNetworksButtonLabel, ElementName=window, Mode=OneWay}"/>
+            </Viewbox>
+        </Button>
 
     </Grid>
 </Window>
